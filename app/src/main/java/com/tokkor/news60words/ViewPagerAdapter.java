@@ -1,14 +1,21 @@
 package com.tokkor.news60words;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +29,9 @@ public class ViewPagerAdapter extends PagerAdapter {
     ArrayList<String> newslinks;
     ArrayList<String> heads;
     VerticalViewPager verticalViewPager;
+
+    int newposition;
+    float x1,x2;
 
     public ViewPagerAdapter(Context context, List<SliderItems> sliderItems, ArrayList<String> titles, ArrayList<String> desc, ArrayList<String> newslinks, ArrayList<String> heads, VerticalViewPager verticalViewPager) {
         this.context = context;
@@ -45,6 +55,7 @@ public class ViewPagerAdapter extends PagerAdapter {
     }
 
     @NonNull
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
         View itemView = mLayoutInflater.inflate(R.layout.item_container, container, false);
@@ -70,13 +81,72 @@ public class ViewPagerAdapter extends PagerAdapter {
 
         // If imageView2 serves a different purpose, set it accordingly
         // For now, it's set to load the same image but with a resized override.
+        // Apply blur effect on imageView2 using Glide Transformations
         Glide.with(context)
                 .load(sliderItems.get(position).getImage())
                 .centerCrop()
+                .apply(RequestOptions.bitmapTransform(new jp.wasabeef.glide.transformations.BlurTransformation(25, 3))) // Blur effect
                 .placeholder(R.drawable.ic_launcher_background)
                 .error(R.drawable.ic_launcher_background)
-                .override(150, 150)  // Adjusted size for the secondary image view
                 .into(imageView2);
+
+        verticalViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+
+                newposition = position;
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+
+        verticalViewPager.setOnTouchListener(new View.OnTouchListener() {
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                switch (event.getAction())
+                {
+                    case MotionEvent.ACTION_DOWN:
+                        x1 = event.getX();
+                        break;
+
+
+                    case MotionEvent.ACTION_UP:
+                        x2 = event.getX();
+                        float deltaX = x1-x2;
+
+                        if (deltaX > 300)
+                        {
+                            Intent i = new Intent(context, NewsDetailsActivity.class);
+                            if (position==1)
+                            {
+                                //for first page
+                                i.putExtra("url",newslinks.get(0));
+                                context.startActivity(i);
+                            }
+                            else
+                            {
+                                //when page scrolled
+                                i.putExtra("url",newslinks.get(newposition));
+                                context.startActivity(i);
+                            }
+                        }
+                        break;
+                }
+                return false;
+            }
+        });
 
         // Add the view to the container
         container.addView(itemView);
