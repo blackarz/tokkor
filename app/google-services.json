@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "387989342589",
+    "project_id": "tokkor-news",
+    "storage_bucket": "tokkor-news.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387989342589:android:77100d1c4eee011adb6414",
+        "android_client_info": {
+          "package_name": "com.tokkor.news60words"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTPePY5WoMLnRyxMkOJ6IJeQ1FQr7nxmg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
