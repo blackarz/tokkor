@@ -40,19 +40,22 @@ public class HomeFragment extends Fragment {
 
         setupCategories();
 
-        // Add tabs based on LinkedHashMap's insertion order
         for (String category : categories.keySet()) {
             tabLayout.addTab(tabLayout.newTab().setText(category));
         }
 
-        // Set default category data (first tab)
-        loadCategoryData(categories.get(tabLayout.getTabAt(0).getText().toString()));
+        // Check if category argument is passed and select tab accordingly
+        String categoryToSelect = getArguments() != null ? getArguments().getString("category") : "Home";
+        int tabIndex = new ArrayList<>(categories.keySet()).indexOf(categoryToSelect);
+        if (tabIndex >= 0) {
+            tabLayout.getTabAt(tabIndex).select();
+            loadCategoryData(categories.get(categoryToSelect));
+        }
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                String categoryKey = categories.get(tab.getText().toString());
-                loadCategoryData(categoryKey);
+                loadCategoryData(categories.get(tab.getText().toString()));
             }
 
             @Override
@@ -64,6 +67,7 @@ public class HomeFragment extends Fragment {
 
         return view;
     }
+
 
     private void setupCategories() {
         categories.put("Home", "Home"); // "Home" tab first
