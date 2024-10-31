@@ -1,68 +1,176 @@
 package com.tokkor.news60words;
 
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import java.util.ArrayList;
-import java.util.List;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
+import com.tokkor.news60words.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
-    // List of slider items
-    List<SliderItems> sliderItems = new ArrayList<>();
+    private FirebaseRemoteConfig remoteConfig;
+    private ActivityMainBinding binding;
+    private FrameLayout frameLayout;
 
-    ArrayList<String> titles = new ArrayList<>();
-    ArrayList<String> desc = new ArrayList<>();
-    ArrayList<String> images = new ArrayList<>();
-    ArrayList<String> newslinks = new ArrayList<>();
-    ArrayList<String> heads = new ArrayList<>();
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isGranted) {
+                    Toast.makeText(this, "Notification permissions not granted", Toast.LENGTH_SHORT).show();
+                }
+            });
 
-    // Firebase database reference
-    DatabaseReference mRef;
-
+    @SuppressLint("NonConstantResourceId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        final VerticalViewPager verticalViewPager = findViewById(R.id.verticalViewPager);
+        askNotificationPermission();
 
-        // Firebase database reference
-        mRef = FirebaseDatabase.getInstance().getReference("News");
+        LinearLayout layNonet = findViewById(R.id.layNonet);
+        frameLayout = findViewById(R.id.frameLayout);
 
-        // Fetching data from Firebase
-        mRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+        setupRemoteConfig();
 
-                for (DataSnapshot ds : snapshot.getChildren()) {
-                    // Retrieve data and log image URLs for testing
-                    titles.add(ds.child("tittle").getValue(String.class));
-                    desc.add(ds.child("desc").getValue(String.class));
-                    String imageUrl = ds.child("imagelink").getValue(String.class);
-                    Log.d("ImageURL", "Image URL: " + imageUrl);  // Log the image URL
-                    images.add(imageUrl);
-                    newslinks.add(ds.child("newslink").getValue(String.class));
-                    heads.add(ds.child("head").getValue(String.class));
-                }
+        frameLayout.setVisibility(View.VISIBLE);
+        replaceFragment(new HomeFragment());
 
-                for (int i = 0; i < images.size(); i++) {
-                    sliderItems.add(new SliderItems(images.get(i)));
-                }
-
-                verticalViewPager.setAdapter(new ViewPagerAdapter(MainActivity.this, sliderItems, titles, desc, newslinks, heads, verticalViewPager));
+        // Set up bottom navigation
+        binding.BottomNavigation.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            switch (item.getItemId()) {
+                case R.id.home:
+                    selectedFragment = new HomeFragment();
+                    break;
+                case R.id.search:
+                    selectedFragment = new SearchFragment();
+                    break;
+                case R.id.account:
+                    selectedFragment = new AccountFragment();
+                    break;
             }
+            if (selectedFragment != null) {
+                replaceFragment(selectedFragment);
+            }
+            return true;
+        });
+    }
 
+    private void replaceFragment(Fragment fragment) {
+        FragmentManager fManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fManager.beginTransaction();
+        fragmentTransaction.replace(R.id.frameLayout, fragment);
+        fragmentTransaction.commit();
+        Log.d("MainActivity", "Fragment replaced: " + fragment.getClass().getSimpleName());
+    }
+
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED) {
+                Log.d("MainActivity", "Notification permission granted");
+            } else if (shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Notification Permission")
+                        .setMessage("For better experience, we need Notification Permission.")
+                        .setPositiveButton("Okay", (dialog, which) ->
+                                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS))
+                        .setNegativeButton("No Thanks", (dialog, which) -> dialog.dismiss())
+                        .create()
+                        .show();
+            } else {
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+
+    private void setupRemoteConfig() {
+        remoteConfig = FirebaseRemoteConfig.getInstance();
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(2)
+                .build();
+        remoteConfig.setConfigSettingsAsync(configSettings);
+
+        remoteConfig.fetchAndActivate().addOnCompleteListener(new OnCompleteListener<Boolean>() {
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("FirebaseError", "Error fetching data", error.toException());
+            public void onComplete(@NonNull Task<Boolean> task) {
+                if (task.isSuccessful()) {
+                    String newVersionCode = remoteConfig.getString("newVersionCode");
+                    try {
+                        if (Integer.parseInt(newVersionCode) > getCurrentVersionCode()) {
+                            showUpdateDialogBox();
+                        }
+                    } catch (NumberFormatException e) {
+                        Log.e("MainActivity", "Invalid version code from Remote Config", e);
+                    }
+                } else {
+                    Log.e("MainActivity", "Remote config fetch failed");
+                }
             }
         });
+    }
+
+    private int getCurrentVersionCode() {
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return packageInfo.versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("MainActivity", "Failed to get version code", e);
+            return -1;
+        }
+    }
+
+    // Method to set the tab position in HomeFragment
+    public void setTabPosition(int tabPosition) {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.frameLayout);
+        if (fragment instanceof HomeFragment) {
+            ((HomeFragment) fragment).setTabPosition(tabPosition);
+        }
+    }
+
+    private void showUpdateDialogBox() {
+        new AlertDialog.Builder(this)
+                .setIcon(R.drawable.tokkor)
+                .setTitle(getString(R.string.new_update))
+                .setMessage(getString(R.string.new_update_text))
+                .setCancelable(false)
+                .setPositiveButton(Html.fromHtml("<h4>Update Now</h4>"), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.playStoreLink))));
+                        } catch (Exception e) {
+                            Toast.makeText(MainActivity.this, "Failed to open update link", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .show();
     }
 }

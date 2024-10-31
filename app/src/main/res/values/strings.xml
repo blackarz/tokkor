@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Tokkor</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="new_update">Medex Medicine Info</string>
+    <string name="new_update_text">New Version Available! \nMust be Updated.</string>
+    <string name="playStoreLink">https://play.google.com/store/apps/details?id=com.tokkor.news60words</string>
+
 </resources>

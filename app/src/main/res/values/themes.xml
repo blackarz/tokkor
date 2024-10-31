@@ -1,14 +1,9 @@
 <resources>
-    <!-- Base application theme. -->
     <style name="Theme.Tokkor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimaryVariant">#491778</item>
+        <!-- Primary and secondary colors -->
+        <item name="colorPrimaryVariant">@color/black</item>
+        <item name="colorPrimaryDark">@color/black</item>
         <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">#161426</item>
-        <!-- Customize your theme here. -->
-
+        <!-- Remove default tinting for bottom navigation -->
     </style>
 </resources>
