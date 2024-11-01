@@ -1,15 +1,12 @@
 package com.tokkor.news60words;
 
 import android.os.Bundle;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
 
 public class SearchFragment extends Fragment {
 
@@ -27,18 +24,29 @@ public class SearchFragment extends Fragment {
         view.findViewById(R.id.Startups).setOnClickListener(v -> openCategory("Startups"));
         view.findViewById(R.id.IsraelHamasWar).setOnClickListener(v -> openCategory("Israel-Hamas-War"));
 
+        // New click listener for Video News
+        view.findViewById(R.id.Videos).setOnClickListener(v -> openVideoFragment());
+
         return view;
     }
 
     private void openCategory(String category) {
         HomeFragment homeFragment = new HomeFragment();
-
         Bundle args = new Bundle();
         args.putString("category", category);
         homeFragment.setArguments(args);
 
         requireActivity().getSupportFragmentManager().beginTransaction()
                 .replace(R.id.frameLayout, homeFragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void openVideoFragment() {
+        VideoPlayerFragment videoFragment = new VideoPlayerFragment();
+
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.frameLayout, videoFragment)
                 .addToBackStack(null)
                 .commit();
     }

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class HomeFragment extends Fragment {
 
@@ -48,14 +49,14 @@ public class HomeFragment extends Fragment {
         String categoryToSelect = getArguments() != null ? getArguments().getString("category") : "Home";
         int tabIndex = new ArrayList<>(categories.keySet()).indexOf(categoryToSelect);
         if (tabIndex >= 0) {
-            tabLayout.getTabAt(tabIndex).select();
+            Objects.requireNonNull(tabLayout.getTabAt(tabIndex)).select();
             loadCategoryData(categories.get(categoryToSelect));
         }
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                loadCategoryData(categories.get(tab.getText().toString()));
+                loadCategoryData(categories.get(Objects.requireNonNull(tab.getText()).toString()));
             }
 
             @Override
@@ -119,14 +120,7 @@ public class HomeFragment extends Fragment {
     }
 
     // Method to open NewsDetailsFragment with the selected tab position
-    public void openNewsDetails(String url) {
-        int selectedTabPosition = tabLayout.getSelectedTabPosition();
-        NewsDetailsFragment fragment = NewsDetailsFragment.newInstance(url);
-        requireActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.frameLayout, fragment)
-                .addToBackStack(null)
-                .commit();
-    }
+
 
     // Method to set the tab position when returning to HomeFragment
     public void setTabPosition(int position) {
